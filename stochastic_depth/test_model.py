@@ -102,3 +102,46 @@ def test_stochastic_depth_block_eval_mode_is_reproducible():
     out1 = block(x)
     out2 = block(x)
     assert torch.allclose(out1, out2)
+
+
+from model import ResNetCIFAR
+
+
+def test_resnet_output_shape():
+    net = ResNetCIFAR(blocks_per_stage=6, stochastic_depth=True)
+    x = torch.randn(4, 3, 32, 32)
+    out = net(x)
+    assert out.shape == (4, 10)
+
+
+def test_resnet_has_18_blocks():
+    net = ResNetCIFAR(blocks_per_stage=6)
+    assert net.num_blocks == 18
+    assert len(net.blocks) == 18
+
+
+def test_resnet_baseline_mode_has_all_survival_probs_equal_one():
+    net = ResNetCIFAR(blocks_per_stage=6, stochastic_depth=False)
+    assert all(p == 1.0 for p in net.survival_probs)
+
+
+def test_resnet_stochastic_depth_mode_uses_linear_decay_schedule():
+    net = ResNetCIFAR(blocks_per_stage=6, stochastic_depth=True, p_L=0.5)
+    assert net.survival_probs == survival_probabilities(18, p_L=0.5)
+
+
+def test_resnet_eval_mode_is_deterministic():
+    net = ResNetCIFAR(blocks_per_stage=6, stochastic_depth=True)
+    net.eval()
+    x = torch.randn(2, 3, 32, 32)
+    out1 = net(x)
+    out2 = net(x)
+    assert torch.allclose(out1, out2)
+
+
+def test_resnet_train_mode_runs_without_error():
+    net = ResNetCIFAR(blocks_per_stage=6, stochastic_depth=True)
+    net.train()
+    x = torch.randn(4, 3, 32, 32)
+    out = net(x)
+    assert out.shape == (4, 10)

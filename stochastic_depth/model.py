@@ -50,3 +50,56 @@ class StochasticDepthBlock(nn.Module):
         else:
             out = identity + self.p * self.branch(x)
         return F.relu(out)
+
+
+class ResNetCIFAR(nn.Module):
+    def __init__(
+        self,
+        blocks_per_stage: int = 6,
+        p_L: float = 0.5,
+        stochastic_depth: bool = True,
+        num_classes: int = 10,
+    ):
+        super().__init__()
+        stage_channels = [16, 32, 64]
+        num_blocks = blocks_per_stage * len(stage_channels)
+        probs = (
+            survival_probabilities(num_blocks, p_L) if stochastic_depth else [1.0] * num_blocks
+        )
+
+        self.stem = nn.Sequential(
+            nn.Conv2d(3, 16, 3, stride=1, padding=1, bias=False),
+            nn.BatchNorm2d(16),
+            nn.ReLU(inplace=True),
+        )
+
+        blocks = []
+        in_channels = 16
+        block_idx = 0
+        for stage_idx, out_channels in enumerate(stage_channels):
+            for i in range(blocks_per_stage):
+                stride = 2 if (stage_idx > 0 and i == 0) else 1
+                branch = ConvBranch(in_channels, out_channels, stride=stride)
+                if stride != 1 or in_channels != out_channels:
+                    shortcut = nn.Sequential(
+                        nn.Conv2d(in_channels, out_channels, 1, stride=stride, bias=False),
+                        nn.BatchNorm2d(out_channels),
+                    )
+                else:
+                    shortcut = nn.Identity()
+                blocks.append(StochasticDepthBlock(branch, shortcut, probs[block_idx]))
+                in_channels = out_channels
+                block_idx += 1
+        self.blocks = nn.ModuleList(blocks)
+
+        self.pool = nn.AdaptiveAvgPool2d(1)
+        self.fc = nn.Linear(stage_channels[-1], num_classes)
+        self.num_blocks = num_blocks
+        self.survival_probs = probs
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        out = self.stem(x)
+        for block in self.blocks:
+            out = block(out)
+        out = self.pool(out).flatten(1)
+        return self.fc(out)
