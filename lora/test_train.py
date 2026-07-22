@@ -61,6 +61,11 @@ def test_evaluate_returns_loss_without_updating_params():
 
 
 def test_current_memory_mb_returns_positive_float():
+    if torch.backends.mps.is_available():
+        # Guarantee there's real allocated memory to report, regardless of
+        # whether any earlier test in this process happened to allocate an
+        # MPS tensor first.
+        _keep_alive = torch.randn(1000, 1000, device="mps")
     assert current_memory_mb() > 0
 
 

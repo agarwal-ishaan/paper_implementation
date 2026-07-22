@@ -48,12 +48,12 @@ def evaluate(model, loader, device) -> dict:
 
 def current_memory_mb() -> float:
     if torch.backends.mps.is_available():
-        # driver_allocated_memory() reflects the MPS runtime's total memory
-        # footprint and is non-zero as soon as MPS is available; the
-        # brief's original current_allocated_memory() only counts tensors
-        # explicitly resident on the MPS device and reads 0 whenever no
-        # MPS tensor has been allocated in-process (e.g. CPU-only tests).
-        return torch.mps.driver_allocated_memory() / (1024 ** 2)
+        # current_allocated_memory() reports the actual bytes occupied by
+        # tensors resident on the MPS device -- the precise, standard
+        # metric (directly analogous to torch.cuda.memory_allocated())
+        # needed to compare full fine-tuning's optimizer-state footprint
+        # against LoRA's.
+        return torch.mps.current_allocated_memory() / (1024 ** 2)
     import psutil
     return psutil.Process().memory_info().rss / (1024 ** 2)
 
