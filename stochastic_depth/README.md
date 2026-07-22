@@ -84,3 +84,41 @@ white = skipped. Early blocks (top, block 0) are almost always active; late bloc
 17) are dropped roughly half the time, matching the schedule above:
 
 ![Block activity heatmap](results/block_activity_heatmap.png)
+
+## The implicit ensemble
+
+None of this needs trained weights to see — the gating only depends on each block's survival
+probability, so a freshly initialized model already shows it. Simulating 5000 forward passes and
+recording which of the 18 blocks fire each time:
+
+![Effective depth distribution](results/effective_depth_histogram.png)
+
+The empirical mean depth (13.22 blocks) lines up almost exactly with the schedule's theoretical
+expectation (`sum(p_l)` = 13.25) — a good sanity check that the gating logic is correct.
+
+![Sub-network diversity](results/subnetwork_diversity.png)
+
+In just 5000 forward passes, 3395 of them (68%) produced a sub-network pattern never seen before,
+out of 262,144 (2^18) possible combinations. This is the paper's "implicit ensemble" made
+concrete: effectively, every batch trains a different, randomly-thinned sub-network rather than
+one fixed 18-block network.
+
+## Timing in detail
+
+The single averaged bar chart above hides some texture. Looking at every epoch individually:
+
+![Per-epoch training time](results/epoch_time_series.png)
+
+![Relative speedup per epoch](results/relative_speedup.png)
+
+Baseline shows periodic large spikes (up to ~52s vs. a usual ~30s) that stochastic depth doesn't
+show nearly as much — likely OS-level interference on this laptop (background processes, thermal
+throttling) rather than anything intrinsic to either algorithm, since both ran on the same
+machine under the same conditions. The epoch-by-epoch mean ratio (0.814, i.e. SD takes ~81% of
+baseline's time) is consistent with the 21% overall speedup already reported, but this is a
+reminder that single-machine timing benchmarks carry real measurement noise.
+
+**Accuracy jumps line up with the learning-rate schedule** — the sudden jump around epoch 41 in
+both models isn't a coincidence, it's exactly where the LR drops 10x (milestone at epoch 40):
+
+![Accuracy with LR decay marked](results/lr_annotated_accuracy.png)
