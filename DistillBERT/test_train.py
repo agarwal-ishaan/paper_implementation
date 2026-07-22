@@ -1,9 +1,10 @@
+import json
 import torch
 from torch.utils.data import DataLoader
 from transformers import BertConfig, BertForSequenceClassification
 
 from model import LossWeights, build_student, init_student_from_teacher
-from train import evaluate, predict, train_step
+from train import evaluate, predict, train_step, train_loop
 
 
 def _tiny_teacher(num_hidden_layers=4, num_labels=2):
@@ -107,3 +108,72 @@ def test_evaluate_returns_expected_keys():
     assert set(result.keys()) == {"accuracy", "f1", "loss"}
     assert 0.0 <= result["accuracy"] <= 1.0
     assert 0.0 <= result["f1"] <= 1.0
+
+
+def test_train_loop_writes_metrics_and_checkpoint(tmp_path):
+    teacher = _tiny_teacher()
+    student = build_student(teacher, num_student_layers=2)
+    init_student_from_teacher(student, teacher)
+    optimizer = torch.optim.SGD(student.parameters(), lr=0.1)
+    train_loader = _make_loader(num_samples=8, batch_size=4)
+    eval_loader = _make_loader(num_samples=8, batch_size=4)
+
+    history = train_loop(
+        student,
+        teacher,
+        train_loader,
+        eval_loader,
+        optimizer,
+        LossWeights(),
+        device=torch.device("cpu"),
+        num_epochs=1,
+        results_dir=tmp_path,
+        run_name="test_run",
+        log_every=1,
+    )
+
+    assert (tmp_path / "test_run_step_metrics.json").exists()
+    assert (tmp_path / "test_run_epoch_metrics.json").exists()
+    assert (tmp_path / "test_run.pt").exists()
+    assert len(history["epoch_metrics"]) == 1
+
+    with open(tmp_path / "test_run_step_metrics.json") as f:
+        step_data = json.load(f)
+    assert len(step_data) > 0
+    assert set(step_data[0].keys()) == {
+        "step",
+        "epoch",
+        "elapsed_seconds",
+        "loss",
+        "task_loss",
+        "distill_loss",
+        "cos_loss",
+    }
+
+
+def test_train_loop_checkpoint_matches_student_state_dict(tmp_path):
+    teacher = _tiny_teacher()
+    student = build_student(teacher, num_student_layers=2)
+    init_student_from_teacher(student, teacher)
+    optimizer = torch.optim.SGD(student.parameters(), lr=0.1)
+    train_loader = _make_loader(num_samples=8, batch_size=4)
+    eval_loader = _make_loader(num_samples=8, batch_size=4)
+
+    train_loop(
+        student,
+        teacher,
+        train_loader,
+        eval_loader,
+        optimizer,
+        LossWeights(),
+        device=torch.device("cpu"),
+        num_epochs=1,
+        results_dir=tmp_path,
+        run_name="test_run",
+        log_every=1,
+    )
+
+    saved_state = torch.load(tmp_path / "test_run.pt")
+    current_state = student.state_dict()
+    for key in current_state:
+        assert torch.equal(saved_state[key], current_state[key])
