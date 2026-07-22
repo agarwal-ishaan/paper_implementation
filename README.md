@@ -22,7 +22,7 @@ Each paper goes through the same loop:
 | Paper | Folder | Status |
 |---|---|---|
 | Deep Networks with Stochastic Depth | [`stochastic_depth/`](stochastic_depth/) | ✅ implemented — [notebook](stochastic_depth/stochastic_depth.ipynb), [writeup](stochastic_depth/README.md) |
-| LoRA | [`lora/`](lora/) | ✅ implemented — [notebook](lora/lora.ipynb) |
+| LoRA | [`lora/`](lora/) | ✅ implemented — [notebook](lora/lora.ipynb), [writeup](lora/README.md) |
 | A Watermark for Large Language Models | [`llm_watermark/`](llm_watermark/) | not yet |
 | Amortized Planning with Large-Scale Transformers (Chess) | [`amortized_planning_chess/`](amortized_planning_chess/) | not yet |
 | CLASP | [`clasp/`](clasp/) | not yet |
