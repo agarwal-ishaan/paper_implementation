@@ -177,3 +177,41 @@ def test_train_loop_checkpoint_matches_student_state_dict(tmp_path):
     current_state = student.state_dict()
     for key in current_state:
         assert torch.equal(saved_state[key], current_state[key])
+
+
+def test_train_loop_writes_step_metrics_even_with_fewer_steps_than_log_every(tmp_path):
+    """Test that step_metrics.json is written even if total steps < log_every."""
+    teacher = _tiny_teacher()
+    student = build_student(teacher, num_student_layers=2)
+    init_student_from_teacher(student, teacher)
+    optimizer = torch.optim.SGD(student.parameters(), lr=0.1)
+    # Create a tiny loader: 1 batch of 2 samples = 1 step per epoch
+    train_loader = _make_loader(num_samples=2, batch_size=4)
+    eval_loader = _make_loader(num_samples=2, batch_size=4)
+
+    # Use log_every=50, which is much larger than 1 step per epoch
+    # This ensures the if step % log_every == 0 branch never fires during training
+    train_loop(
+        student,
+        teacher,
+        train_loader,
+        eval_loader,
+        optimizer,
+        LossWeights(),
+        device=torch.device("cpu"),
+        num_epochs=1,
+        results_dir=tmp_path,
+        run_name="test_run",
+        log_every=50,
+    )
+
+    # Assert that step_metrics.json exists and contains the correct data structure
+    # even though no intermediate write happened
+    step_metrics_file = tmp_path / "test_run_step_metrics.json"
+    assert step_metrics_file.exists(), "step_metrics.json should exist after training"
+
+    with open(step_metrics_file) as f:
+        step_data = json.load(f)
+    # In this case, we had 1 epoch with 1 step, and log_every=50, so step_metrics
+    # should be empty (no intermediate writes occurred), but the file should exist
+    assert isinstance(step_data, list)

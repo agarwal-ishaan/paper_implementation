@@ -123,6 +123,10 @@ def train_loop(
         with open(results_dir / f"{run_name}_epoch_metrics.json", "w") as f:
             json.dump(epoch_metrics, f, indent=2)
 
+    # Guarantee step_metrics.json is written even if no steps hit log_every threshold
+    with open(results_dir / f"{run_name}_step_metrics.json", "w") as f:
+        json.dump(step_metrics, f, indent=2)
+
     torch.save(student.state_dict(), results_dir / f"{run_name}.pt")
 
     return {"step_metrics": step_metrics, "epoch_metrics": epoch_metrics}
