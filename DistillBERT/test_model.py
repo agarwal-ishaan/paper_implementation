@@ -2,7 +2,7 @@ import pytest
 import torch
 from transformers import BertConfig, BertForSequenceClassification
 
-from model import build_student
+from model import build_student, init_student_from_teacher
 
 
 def _tiny_teacher_config(num_hidden_layers=4, num_labels=2):
@@ -52,3 +52,46 @@ def test_build_student_has_fewer_parameters_than_teacher():
     teacher_params = sum(p.numel() for p in teacher.parameters())
     student_params = sum(p.numel() for p in student.parameters())
     assert student_params < teacher_params
+
+
+def test_init_student_from_teacher_copies_embeddings():
+    teacher = BertForSequenceClassification(_tiny_teacher_config(num_hidden_layers=4))
+    student = build_student(teacher, num_student_layers=2)
+    init_student_from_teacher(student, teacher)
+    assert torch.equal(
+        student.bert.embeddings.word_embeddings.weight,
+        teacher.bert.embeddings.word_embeddings.weight,
+    )
+    assert torch.equal(
+        student.bert.embeddings.position_embeddings.weight,
+        teacher.bert.embeddings.position_embeddings.weight,
+    )
+
+
+def test_init_student_from_teacher_copies_every_other_layer():
+    teacher = BertForSequenceClassification(_tiny_teacher_config(num_hidden_layers=4))
+    student = build_student(teacher, num_student_layers=2)
+    init_student_from_teacher(student, teacher)
+    assert torch.equal(
+        student.bert.encoder.layer[0].attention.self.query.weight,
+        teacher.bert.encoder.layer[0].attention.self.query.weight,
+    )
+    assert torch.equal(
+        student.bert.encoder.layer[1].attention.self.query.weight,
+        teacher.bert.encoder.layer[2].attention.self.query.weight,
+    )
+
+
+def test_init_student_from_teacher_does_not_touch_classifier_head():
+    teacher = BertForSequenceClassification(_tiny_teacher_config(num_hidden_layers=4))
+    student = build_student(teacher, num_student_layers=2)
+    classifier_before = student.classifier.weight.clone()
+    init_student_from_teacher(student, teacher)
+    assert torch.equal(student.classifier.weight, classifier_before)
+
+
+def test_init_student_from_teacher_raises_if_layer_count_does_not_divide_evenly():
+    teacher = BertForSequenceClassification(_tiny_teacher_config(num_hidden_layers=5))
+    student = build_student(teacher, num_student_layers=2)
+    with pytest.raises(ValueError):
+        init_student_from_teacher(student, teacher)
