@@ -1,6 +1,5 @@
 import pytest
 import torch
-import torch.nn.functional as F
 from transformers import GPT2LMHeadModel
 from transformers.pytorch_utils import Conv1D
 

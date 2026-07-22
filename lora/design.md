@@ -61,7 +61,7 @@ For both runs, save under `lora/results/`:
   adapter weights alone (`A`/`B` per layer — much smaller, this is LoRA's other headline benefit)
   as `.pt` files.
 - **Per-step metrics** (JSON, not just printed lines): training loss every N steps, wall-clock
-  time per step/epoch, peak memory (via `torch.mps.current_allocated_memory()` on this machine, or
+  time per step/epoch, current allocated memory (via `torch.mps.current_allocated_memory()` on this machine, or
   `psutil` RSS as a fallback), and for the LoRA run specifically, the Frobenius norm of `ΔW = A·B`
   logged periodically (shows how much the adaptation has grown from its zero-initialized start).
 - **Generation samples**: a fixed prompt's continuation from the base model, the fully fine-tuned

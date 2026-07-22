@@ -738,17 +738,19 @@ def run_finetune(mode: str):
         print(f"[{mode}] epoch {epoch + 1}/{EPOCHS} test_loss={eval_stats['loss']:.3f}")
         print(f"  sample: {sample!r}")
 
-    with open(f"results/{mode}_history.json", "w") as f:
-        json.dump(history, f)
-    with open(f"results/{mode}_eval_history.json", "w") as f:
-        json.dump(eval_history, f)
-    with open(f"results/{mode}_samples.json", "w") as f:
-        json.dump(samples, f)
+        # Persist after every epoch (not just at the end) so an interrupted run
+        # doesn't lose everything already completed.
+        with open(f"results/{mode}_history.json", "w") as f:
+            json.dump(history, f)
+        with open(f"results/{mode}_eval_history.json", "w") as f:
+            json.dump(eval_history, f)
+        with open(f"results/{mode}_samples.json", "w") as f:
+            json.dump(samples, f)
 
-    if mode == "lora":
-        save_lora_adapters(lora_modules, "results/lora_adapter.pt")
-    else:
-        save_checkpoint(model, "results/full_finetune.pt")
+        if mode == "lora":
+            save_lora_adapters(lora_modules, "results/lora_adapter.pt")
+        else:
+            save_checkpoint(model, "results/full_finetune.pt")
 
     return model, history, eval_history, samples
 

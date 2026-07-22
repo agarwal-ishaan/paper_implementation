@@ -22,7 +22,8 @@ class LoRAConv1D(nn.Module):
             p.requires_grad = False
 
         in_features, out_features = base.weight.shape
-        assert out_features % 3 == 0, "Conv1D output must be divisible by 3 (q/k/v)"
+        if out_features % 3 != 0:
+            raise ValueError("Conv1D output must be divisible by 3 (q/k/v)")
         out_features_third = out_features // 3
         self.out_features_third = out_features_third
         self.scaling = alpha / r
