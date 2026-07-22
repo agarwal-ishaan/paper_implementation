@@ -48,3 +48,28 @@ class LoRAConv1D(nn.Module):
         delta_q = self.scaling * (self.lora_A_q @ self.lora_B_q)
         delta_v = self.scaling * (self.lora_A_v @ self.lora_B_v)
         return torch.sqrt((delta_q ** 2).sum() + (delta_v ** 2).sum()).item()
+
+
+def inject_lora(model, r: int = 8, alpha: int = 16) -> list:
+    """Replace each transformer block's c_attn with a LoRAConv1D wrapper."""
+    lora_modules = []
+    for block in model.transformer.h:
+        wrapped = LoRAConv1D(block.attn.c_attn, r=r, alpha=alpha)
+        block.attn.c_attn = wrapped
+        lora_modules.append(wrapped)
+    return lora_modules
+
+
+def setup_lora_model(model, r: int = 8, alpha: int = 16) -> list:
+    """Freeze every parameter, then inject trainable LoRA adapters."""
+    for p in model.parameters():
+        p.requires_grad = False
+    return inject_lora(model, r=r, alpha=alpha)
+
+
+def trainable_parameter_count(model) -> int:
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+
+def total_parameter_count(model) -> int:
+    return sum(p.numel() for p in model.parameters())
