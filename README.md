@@ -22,19 +22,19 @@ Each paper goes through the same loop:
 | Paper | Folder | Status |
 |---|---|---|
 | Deep Networks with Stochastic Depth | [`stochastic_depth/`](stochastic_depth/) | ✅ implemented — [notebook](stochastic_depth/stochastic_depth.ipynb), [writeup](stochastic_depth/README.md) |
+| LoRA | [`lora/`](lora/) | ✅ implemented — [notebook](lora/lora.ipynb) |
 | A Watermark for Large Language Models | [`llm_watermark/`](llm_watermark/) | not yet |
 | Amortized Planning with Large-Scale Transformers (Chess) | [`amortized_planning_chess/`](amortized_planning_chess/) | not yet |
 | CLASP | [`clasp/`](clasp/) | not yet |
 | Cold Diffusion | [`cold_diffusion/`](cold_diffusion/) | not yet |
 | Contrastive Decoding | [`contrastive_decoding/`](contrastive_decoding/) | not yet |
 | Training data-efficient image transformers (DeiT) | [`deit/`](deit/) | not yet |
-| DistillBERT | [`DistillBERT/`](DistillBERT/) | not yet |
+| DistillBERT | [`DistillBERT/`](DistillBERT/) | 🚧 design + plan written, not yet implemented |
 | DoRA | [`dora/`](dora/) | not yet |
 | EfficientNet | [`efficientnet/`](efficientnet/) | not yet |
 | How Attentive are Graph Attention Networks (GATv2) | [`gatv2/`](gatv2/) | not yet |
 | Graph Attention Networks (GAT) | [`graph_attention_networks/`](graph_attention_networks/) | not yet |
 | Image2StyleGAN++ | [`image2stylegan_plus_plus/`](image2stylegan_plus_plus/) | not yet |
-| LoRA | [`lora/`](lora/) | not yet |
 | Neural ODEs | [`neural_odes/`](neural_odes/) | not yet |
 | PatchTST (A Time Series is Worth 64 Words) | [`patchtst_time_series/`](patchtst_time_series/) | not yet |
 | PerSAM (Personalize Segment Anything with One Shot) | [`persam/`](persam/) | not yet |
