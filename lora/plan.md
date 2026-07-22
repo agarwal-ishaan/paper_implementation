@@ -312,7 +312,7 @@ git commit -m "Add LoRA injection and parameter-freezing helpers"
 - Create: `lora/test_train.py`
 
 **Interfaces:**
-- Consumes: nothing from Task 1/2 directly (works on any `GPT2LMHeadModel`-shaped model, tested against the real `distilgpt2`).
+- Consumes: nothing from Task 1/2 directly (works on any `GPT2LMHeadModel`-shaped model; loop-mechanics tests use a tiny randomly-initialized config for speed, not the real pretrained `distilgpt2`, since these tests only check training-loop behavior, not the real architecture).
 - Produces: `compute_loss(model, input_ids, attention_mask=None) -> Tensor` (scalar), `train_step(model, batch, optimizer, device) -> dict` (keys `"loss"`, `"time_seconds"`), `evaluate(model, loader, device) -> dict` (key `"loss"`), `current_memory_mb() -> float`, `save_checkpoint(model, path: str) -> None`, `save_lora_adapters(lora_modules, path: str) -> None`. Used by Task 5's notebook.
 
 - [ ] **Step 1: Write the failing tests**
@@ -321,7 +321,7 @@ Create `lora/test_train.py`:
 
 ```python
 import torch
-from transformers import GPT2LMHeadModel
+from transformers import GPT2Config, GPT2LMHeadModel
 from transformers.pytorch_utils import Conv1D
 
 from model import LoRAConv1D
@@ -335,13 +335,24 @@ from train import (
 )
 
 
-def _tiny_batch(vocab_size=50257, batch_size=2, seq_len=8):
+def make_tiny_gpt2(vocab_size=100, n_positions=32, n_embd=16, n_layer=2, n_head=2):
+    """A randomly-initialized, tiny GPT-2 for fast, isolated loop-mechanics
+    tests — these tests only need something shaped like a causal LM, not the
+    real pretrained distilgpt2 (that integration is covered in test_model.py,
+    which specifically needs the real architecture)."""
+    config = GPT2Config(
+        vocab_size=vocab_size, n_positions=n_positions, n_embd=n_embd, n_layer=n_layer, n_head=n_head
+    )
+    return GPT2LMHeadModel(config)
+
+
+def _tiny_batch(vocab_size=100, batch_size=2, seq_len=8):
     input_ids = torch.randint(0, vocab_size, (batch_size, seq_len))
     return {"input_ids": input_ids, "attention_mask": torch.ones_like(input_ids)}
 
 
 def test_compute_loss_returns_positive_scalar():
-    model = GPT2LMHeadModel.from_pretrained("distilgpt2")
+    model = make_tiny_gpt2()
     batch = _tiny_batch()
     loss = compute_loss(model, batch["input_ids"], batch["attention_mask"])
     assert loss.dim() == 0
@@ -349,7 +360,7 @@ def test_compute_loss_returns_positive_scalar():
 
 
 def test_train_step_returns_expected_keys_and_updates_params():
-    model = GPT2LMHeadModel.from_pretrained("distilgpt2")
+    model = make_tiny_gpt2()
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
     batch = _tiny_batch()
     before = model.lm_head.weight.clone()
@@ -361,7 +372,7 @@ def test_train_step_returns_expected_keys_and_updates_params():
 
 
 def test_evaluate_returns_loss_without_updating_params():
-    model = GPT2LMHeadModel.from_pretrained("distilgpt2")
+    model = make_tiny_gpt2()
     batch = _tiny_batch()
     loader = [batch, batch]
     before = [p.clone() for p in model.parameters()]
