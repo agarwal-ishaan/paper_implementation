@@ -95,3 +95,56 @@ def test_init_student_from_teacher_raises_if_layer_count_does_not_divide_evenly(
     student = build_student(teacher, num_student_layers=2)
     with pytest.raises(ValueError):
         init_student_from_teacher(student, teacher)
+
+
+import math
+
+from model import LossWeights, cosine_loss, distillation_loss
+
+
+def test_distillation_loss_known_value_uniform_case():
+    logits = torch.tensor([[0.0, 0.0]])
+    loss = distillation_loss(logits, logits, temperature=1.0)
+    assert loss.item() == pytest.approx(math.log(2), abs=1e-5)
+
+
+def test_distillation_loss_known_value_nonuniform_case():
+    logits = torch.log(torch.tensor([[3.0, 1.0]]))  # softmax(logits) -> [0.75, 0.25]
+    loss = distillation_loss(logits, logits, temperature=1.0)
+    expected = -(0.75 * math.log(0.75) + 0.25 * math.log(0.25))
+    assert loss.item() == pytest.approx(expected, abs=1e-5)
+
+
+def test_distillation_loss_temperature_changes_the_value():
+    logits = torch.log(torch.tensor([[3.0, 1.0]]))
+    loss_t1 = distillation_loss(logits, logits, temperature=1.0)
+    loss_t2 = distillation_loss(logits, logits, temperature=2.0)
+    assert loss_t1.item() != pytest.approx(loss_t2.item())
+
+
+def test_cosine_loss_identical_vectors_is_zero():
+    v = torch.tensor([[1.0, 2.0, 3.0]])
+    loss = cosine_loss(v, v)
+    assert loss.item() == pytest.approx(0.0, abs=1e-5)
+
+
+def test_cosine_loss_orthogonal_vectors_is_one():
+    v1 = torch.tensor([[1.0, 0.0]])
+    v2 = torch.tensor([[0.0, 1.0]])
+    loss = cosine_loss(v1, v2)
+    assert loss.item() == pytest.approx(1.0, abs=1e-5)
+
+
+def test_cosine_loss_opposite_vectors_is_two():
+    v1 = torch.tensor([[1.0, 0.0]])
+    v2 = torch.tensor([[-1.0, 0.0]])
+    loss = cosine_loss(v1, v2)
+    assert loss.item() == pytest.approx(2.0, abs=1e-5)
+
+
+def test_loss_weights_defaults_match_paper_release_ratios():
+    weights = LossWeights()
+    assert weights.alpha_task == pytest.approx(2.0)
+    assert weights.alpha_ce == pytest.approx(5.0)
+    assert weights.alpha_cos == pytest.approx(1.0)
+    assert weights.temperature == pytest.approx(2.0)
