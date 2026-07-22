@@ -22,6 +22,7 @@ def train_step(student, teacher, batch: dict, optimizer, weights: LossWeights, d
     distill_loss = torch.tensor(0.0, device=device)
     cos_loss_value = torch.tensor(0.0, device=device)
     if teacher is not None:
+        teacher.eval()
         with torch.no_grad():
             teacher_out = teacher(
                 input_ids=input_ids,
