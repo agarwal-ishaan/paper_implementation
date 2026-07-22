@@ -63,7 +63,8 @@ per the paper's stated initialization trick. A fresh classification head is rand
   performed locally; the paper treats "a fine-tuned BERT" as a given input, not its contribution.
 - **Student**: 6-layer BERT, hidden size 768 (unchanged — the paper's own ablation notes hidden-size
   reduction has less favorable efficiency trade-offs than depth reduction), teacher-initialized as
-  above, ~40-50% of the teacher's parameter count (matching the paper's headline "40% smaller").
+  above, ~60% of the teacher's parameter count (matching the paper's headline "40% smaller" — a
+  40% reduction means 60% remains; the paper's own BERT-base/DistilBERT split is 110M/66M, also ~60%).
 - **Task**: IMDb sentiment classification (`stanfordnlp/imdb` on HF Hub, 25k train / 25k test),
   reviews truncated to 256 tokens, matching the paper's own downstream benchmark (Table 2).
 - **Device**: `torch.device("mps")` if available, else CPU.
@@ -78,7 +79,7 @@ per the paper's stated initialization trick. A fresh classification head is rand
 For the teacher (eval only, no training) and each of the 3 student variants, save under
 `DistillBERT/results/`:
 
-- **Checkpoints**: each student variant's state dict as a `.pt` file (kept out of git — at ~40-50%
+- **Checkpoints**: each student variant's state dict as a `.pt` file (kept out of git — at ~60%
   of BERT-base's size these are not the small, commit-worthy artifacts LoRA's adapters were).
 - **Per-step metrics** (JSON): total loss and each individual loss component (`L_task`, `L_ce`,
   `L_cos` where applicable) every N steps, wall-clock time per step/epoch, peak memory
@@ -89,7 +90,7 @@ For the teacher (eval only, no training) and each of the 3 student variants, sav
 
 ## Comparison / visualizations
 
-- **Parameter count**: teacher (~110M) vs. student (~40-50% smaller) — bar chart, the headline claim.
+- **Parameter count**: teacher (~110M) vs. student (~40% smaller, ~60% remaining) — bar chart, the headline claim.
 - **Test accuracy / F1**: teacher vs. all 3 student variants on the IMDb test set — bar chart,
   directly mirrors the paper's ablation story (each loss term should help, in order).
 - **Inference time**: batch inference wall-clock, teacher vs. student, on the same hardware —
@@ -126,7 +127,7 @@ For the teacher (eval only, no training) and each of the 3 student variants, sav
 
 Run the notebook top to bottom (fresh kernel) and confirm:
 - No errors on MPS/CPU backend.
-- Student parameter count is roughly 40-50% of the teacher's.
+- Student parameter count is roughly 60% of the teacher's (~40% smaller).
 - Teacher-init check passes: immediately after initialization (before any training), student layer
   `i`'s weights exactly match teacher layer `2*i`'s weights.
 - All 3 student variants' training loss decreases over training.

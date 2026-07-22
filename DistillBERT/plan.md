@@ -47,7 +47,7 @@ confirmed available). No new dependencies needed.
   `python -m pytest test_model.py test_train.py` run from inside that directory can import `model`
   and `train` directly.
 - Checkpoints (`DistillBERT/results/*.pt`) stay gitignored (repo-level `.gitignore` already excludes
-  `*.pt`/`*.pth`) — unlike the LoRA implementation's small adapters, these are ~40-50% of BERT-base's
+  `*.pt`/`*.pth`) — unlike the LoRA implementation's small adapters, these are ~60% of BERT-base's
   size and not worth committing. Metrics JSON files are small and get committed.
 - Commit after each task.
 
@@ -1197,7 +1197,7 @@ including all bar charts, loss curves, and the printed comparison tables.
 Then confirm the conditions from `design.md`'s Verification section by reading the executed
 notebook's outputs:
 - No errors on MPS/CPU backend.
-- Student parameter count is roughly 40-50% of the teacher's.
+- Student parameter count is roughly 60% of the teacher's (~40% smaller).
 - The Step 5 teacher-init assertions passed (they'll raise `AssertionError` and halt execution
   otherwise, so passing silently is confirmation).
 - All 3 variants' training loss decreases over training (visible in the Step 9 loss-curve plot).
