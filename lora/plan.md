@@ -771,7 +771,7 @@ Markdown:
 
 Code:
 ```python
-full_trainable = total_parameter_count(full_model)
+full_trainable = trainable_parameter_count(full_model)
 lora_trainable = trainable_parameter_count(lora_model)
 total_params = total_parameter_count(lora_model)
 
