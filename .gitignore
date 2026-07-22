@@ -5,4 +5,5 @@ __pycache__/
 data/
 *.pt
 *.pth
+!lora/results/lora_adapter*.pt
 nbconvert.log
